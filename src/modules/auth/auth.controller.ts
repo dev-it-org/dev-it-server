@@ -3,7 +3,7 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger'
 
 import { AuthService } from './auth.service'
 import { SignInDto, SignUpDto } from './dto'
-import { T_SignInResponse, T_SignUpResponse } from './models'
+import { I_SignInResponse, I_SignUpResponse } from './models'
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -20,7 +20,7 @@ export class AuthController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  signUp(@Body() dto: SignUpDto): Promise<T_SignUpResponse> {
+  signUp(@Body() dto: SignUpDto): Promise<I_SignUpResponse> {
     return this.authService.signUp(dto)
   }
 
@@ -34,7 +34,7 @@ export class AuthController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  signIn(@Body() dto: SignInDto): Promise<T_SignInResponse> {
+  signIn(@Body() dto: SignInDto): Promise<I_SignInResponse> {
     return this.authService.signIn(dto)
   }
 }
