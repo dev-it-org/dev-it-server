@@ -2,7 +2,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 
-import './env.path'
+import './utils/env.path'
 import { AppModule } from './app.module'
 
 async function bootstrap() {
