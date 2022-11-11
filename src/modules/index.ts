@@ -1,2 +1,5 @@
 export { PrismaModule } from './prisma'
 export { AuthModule } from './auth'
+export { InfoModule } from './info'
+export { PostsModule } from './posts'
+export { UsersModule } from './users'
