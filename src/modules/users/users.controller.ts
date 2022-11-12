@@ -1,3 +1,4 @@
+import { Role } from '@prisma/client'
 import {
   Body,
   Controller,
@@ -13,7 +14,6 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
-import { Role } from '@prisma/client'
 import { Request } from 'express'
 
 import { CreateUserDto, UpdateUserDto } from './dto'
@@ -23,9 +23,8 @@ import { T_User } from './models'
 import { I_GetData } from 'src/models/app.model'
 import { RolesGuard } from 'src/common'
 
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'), RolesGuard([Role.Admin, Role.Moderator]))
+@ApiBearerAuth()
 @Controller('users')
 @ApiTags('Users')
 export class UsersController {
@@ -41,11 +40,8 @@ export class UsersController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  getUsers(
-    @Req() req: Request,
-  ): Promise<I_GetData<{ users: T_User[]; count: number }>> {
-    const user = req.user
-    return this.usersService.getUsersAuthorized(user['email'])
+  getUsers(): Promise<I_GetData<{ users: T_User[]; count: number }>> {
+    return this.usersService.getUsers()
   }
 
   @Get(':userId')
@@ -59,11 +55,9 @@ export class UsersController {
     description: 'Forbidden',
   })
   getUser(
-    @Req() req: Request,
     @Param('userId') userId: string,
   ): Promise<I_GetData<{ user: T_User }>> {
-    const user = req.user
-    return this.usersService.getUserAuthorized(user['email'], Number(userId))
+    return this.usersService.getUser(Number(userId))
   }
 
   @Put(':userId')
@@ -77,16 +71,10 @@ export class UsersController {
     description: 'Forbidden',
   })
   updateUser(
-    @Req() req: Request,
     @Body() body: UpdateUserDto,
     @Param('userId') userId: string,
-  ): Promise<I_GetData<{ user: T_User }>> {
-    const user = req.user
-    return this.usersService.updateUserAuthorized(
-      user['email'],
-      Number(userId),
-      body,
-    )
+  ): Promise<I_GetData<Omit<T_User, 'created_at' | 'updated_at'>>> {
+    return this.usersService.updateUser(Number(userId), body)
   }
 
   @Post('')
@@ -100,28 +88,24 @@ export class UsersController {
     description: 'Forbidden',
   })
   createUser(
-    @Req() req: Request,
     @Body() body: CreateUserDto,
   ): Promise<I_GetData<Omit<T_User, 'created_at' | 'updated_at'>>> {
-    const user = req.user
-    return this.usersService.createUserAuthorized(user['email'], body)
+    return this.usersService.createUser(body)
   }
 
   @Delete(':userId')
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User updated successfully',
+    description: 'User deleted successfully',
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
   deleteUser(
-    @Req() req: Request,
     @Param('userId') userId: string,
   ): Promise<Omit<I_GetData<unknown>, 'data'>> {
-    const user = req.user
-    return this.usersService.deleteUserAuthorized(user['email'], Number(userId))
+    return this.usersService.deleteUser(Number(userId))
   }
 }

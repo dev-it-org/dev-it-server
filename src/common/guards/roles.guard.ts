@@ -4,34 +4,22 @@ import {
   HttpException,
   HttpStatus,
   mixin,
-  Inject,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { Role } from '@prisma/client'
-
-import { PrismaService } from 'src/modules/prisma'
+import { Request } from 'express'
 
 export const RolesGuard = (roles: Role[]) => {
   class RolesGuardMixin implements CanActivate {
-    constructor(
-      public reflector: Reflector,
-      @Inject(PrismaService)
-      public prismaService: PrismaService,
-    ) {}
+    constructor(public reflector: Reflector) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
       try {
         if (!roles) return true
 
-        const { user } = await context.switchToHttp().getRequest()
-        const { role } = await this.prismaService.user.findUnique({
-          where: {
-            id: user.id,
-          },
-        })
-        console.log(role)
+        const req: Request = await context.switchToHttp().getRequest()
 
-        return roles.includes(role)
+        return roles.includes(req.user['role'])
       } catch {
         throw new HttpException(
           {

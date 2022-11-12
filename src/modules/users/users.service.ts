@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { Role, User } from '@prisma/client'
+import { User } from '@prisma/client'
 import * as argon2 from 'argon2'
 
 import { PrismaService } from '../prisma'
@@ -23,9 +23,7 @@ import { I_GetData } from 'src/models/app.model'
 export class UsersService {
   constructor(private prismaService: PrismaService) {}
 
-  async getUsersAuthorized(
-    email: string,
-  ): Promise<I_GetData<{ users: T_User[]; count: number }>> {
+  async getUsers(): Promise<I_GetData<{ users: T_User[]; count: number }>> {
     const users = await this.findMany()
 
     return {
@@ -38,10 +36,7 @@ export class UsersService {
     }
   }
 
-  async getUserAuthorized(
-    email: string,
-    userId: number,
-  ): Promise<I_GetData<{ user: T_User }>> {
+  async getUser(userId: number): Promise<I_GetData<{ user: T_User }>> {
     await this.checkNotExists('id', userId)
 
     const user = await this.findUnique('id', Number(userId))
@@ -55,30 +50,31 @@ export class UsersService {
     }
   }
 
-  async updateUserAuthorized(
-    email: string,
+  async updateUser(
     userId: number,
     body: UpdateUserDto,
-  ): Promise<I_GetData<{ user: T_User }>> {
+  ): Promise<I_GetData<Omit<T_User, 'created_at' | 'updated_at'>>> {
     await this.checkNotExists('id', userId)
 
     const user = await this.update({
-      type: 'email',
-      param: email,
+      type: 'id',
+      param: userId,
       userData: body,
     })
 
     return {
       message: 'Successfully updated user',
       data: {
-        user,
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
       },
       timestamp: new Date(),
     }
   }
 
-  async createUserAuthorized(
-    email: string,
+  async createUser(
     body: CreateUserDto,
   ): Promise<I_GetData<Omit<T_User, 'created_at' | 'updated_at'>>> {
     await this.checkExists('email', body.email)
@@ -103,15 +99,11 @@ export class UsersService {
     }
   }
 
-  async deleteUserAuthorized(
-    email: string,
-    userId: number,
-  ): Promise<Omit<I_GetData<unknown>, 'data'>> {
+  async deleteUser(userId: number): Promise<Omit<I_GetData<unknown>, 'data'>> {
     await this.checkNotExists('id', userId)
     await this.delete({
       type: 'id',
       param: userId,
-      email,
     })
 
     return {
@@ -204,9 +196,9 @@ export class UsersService {
 
   async delete(data: T_UserDeleteData) {
     try {
-      const { type, param, email } = data
+      const { type, param } = data
 
-      const user = await this.findUnique('email', email)
+      const user = await this.findUnique(type, param)
 
       if (user.id === param)
         throw new ForbiddenException('Can not be deleted while authorized')
