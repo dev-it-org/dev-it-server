@@ -1,1 +1,1 @@
-export { RolesGuard } from './roles.guard'
+export * from './roles.guard'

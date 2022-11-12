@@ -1,1 +1,1 @@
-export { InfoModule } from './info.module'
+export * from './info.module'
