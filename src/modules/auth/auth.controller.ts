@@ -52,7 +52,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard('jwt-refresh'))
   @ApiBearerAuth()
-  @Post('refresh-tokens')
+  @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
