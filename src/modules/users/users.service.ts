@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { User } from '@prisma/client'
+import { Role, User } from '@prisma/client'
 import * as argon2 from 'argon2'
 
 import { PrismaService } from '../prisma'
@@ -56,6 +56,9 @@ export class UsersService {
   ): Promise<I_GetData<Omit<T_User, 'created_at' | 'updated_at'>>> {
     await this.checkNotExists('id', userId)
 
+    if (!Object.values(Role).includes(body.role))
+      throw new ForbiddenException('Incorrect role')
+
     const user = await this.update({
       type: 'id',
       param: userId,
@@ -99,11 +102,15 @@ export class UsersService {
     }
   }
 
-  async deleteUser(userId: number): Promise<Omit<I_GetData<unknown>, 'data'>> {
+  async deleteUser(
+    localId: number,
+    userId: number,
+  ): Promise<Omit<I_GetData<unknown>, 'data'>> {
     await this.checkNotExists('id', userId)
     await this.delete({
       type: 'id',
       param: userId,
+      userId: localId,
     })
 
     return {
@@ -196,11 +203,9 @@ export class UsersService {
 
   async delete(data: T_UserDeleteData) {
     try {
-      const { type, param } = data
+      const { type, param, userId } = data
 
-      const user = await this.findUnique(type, param)
-
-      if (user.id === param)
+      if (userId === param)
         throw new ForbiddenException('Can not be deleted while authorized')
 
       await this.prismaService.user.delete({

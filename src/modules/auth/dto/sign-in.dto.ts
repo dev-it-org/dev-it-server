@@ -7,7 +7,7 @@ export class SignInDto {
   @IsNotEmpty()
   email: string
 
-  @ApiProperty({ default: 'string' })
+  @ApiProperty({ default: 'test' })
   @IsString()
   @IsNotEmpty()
   password: string

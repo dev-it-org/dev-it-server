@@ -21,4 +21,5 @@ export type T_UserCreateData = {
 export type T_UserDeleteData = {
   type: T_UserFindType
   param: T_UserFindParam
+  userId: number
 }

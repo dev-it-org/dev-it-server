@@ -104,8 +104,10 @@ export class UsersController {
     description: 'Forbidden',
   })
   deleteUser(
+    @Req() req: Request,
     @Param('userId') userId: string,
   ): Promise<Omit<I_GetData<unknown>, 'data'>> {
-    return this.usersService.deleteUser(Number(userId))
+    const user = req.user
+    return this.usersService.deleteUser(Number(user['sub']), Number(userId))
   }
 }

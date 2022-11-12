@@ -26,20 +26,20 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async signUp(dto: SignUpDto): Promise<I_GetData<I_SignUpResponse>> {
+  async signUp(body: SignUpDto): Promise<I_GetData<I_SignUpResponse>> {
     try {
-      const userExists = await this.usersService.findUnique('email', dto.email)
+      const userExists = await this.usersService.findUnique('email', body.email)
 
       if (userExists)
         throw new ForbiddenException(
-          `User with email: ${dto.email} already exists`,
+          `User with email: ${body.email} already exists`,
         )
 
-      const hashedPassword = await argon2.hash(dto.password)
+      const hashedPassword = await argon2.hash(body.password)
 
       const user = await this.usersService.create({
-        email: dto.email,
-        username: dto.username,
+        email: body.email,
+        username: body.username,
         hash: hashedPassword,
       })
 
@@ -63,14 +63,17 @@ export class AuthService {
     }
   }
 
-  async signIn(dto: SignInDto): Promise<I_GetData<I_SignInResponse>> {
+  async signIn(body: SignInDto): Promise<I_GetData<I_SignInResponse>> {
     try {
-      const user = await this.usersService.findUniqueDefault('email', dto.email)
+      const user = await this.usersService.findUniqueDefault(
+        'email',
+        body.email,
+      )
 
       if (!user)
-        throw new NotFoundException(`User with email ${dto.email} not found`)
+        throw new NotFoundException(`User with email ${body.email} not found`)
 
-      const passwordMatches = await argon2.verify(user.hash, dto.password)
+      const passwordMatches = await argon2.verify(user.hash, body.password)
 
       if (!passwordMatches) throw new ForbiddenException('Incorrect password')
 
@@ -135,7 +138,7 @@ export class AuthService {
         },
         {
           secret: this.configService.get<string>('ACCESS_TOKEN'),
-          expiresIn: 60 * 5,
+          expiresIn: 60 * 15,
         },
       ),
       this.jwtService.signAsync(

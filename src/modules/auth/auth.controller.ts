@@ -33,8 +33,8 @@ export class AuthController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  signUp(@Body() dto: SignUpDto): Promise<I_GetData<I_SignUpResponse>> {
-    return this.authService.signUp(dto)
+  signUp(@Body() body: SignUpDto): Promise<I_GetData<I_SignUpResponse>> {
+    return this.authService.signUp(body)
   }
 
   @Post('sign-in')
@@ -47,8 +47,8 @@ export class AuthController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  signIn(@Body() dto: SignInDto): Promise<I_GetData<I_SignInResponse>> {
-    return this.authService.signIn(dto)
+  signIn(@Body() body: SignInDto): Promise<I_GetData<I_SignInResponse>> {
+    return this.authService.signIn(body)
   }
 
   @UseGuards(AuthGuard('jwt'))

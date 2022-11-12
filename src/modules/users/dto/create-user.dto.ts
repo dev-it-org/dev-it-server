@@ -12,7 +12,7 @@ export class CreateUserDto {
   @IsString()
   username: string
 
-  @ApiProperty()
+  @ApiProperty({ default: 'test' })
   @IsString()
   @IsNotEmpty()
   password: string

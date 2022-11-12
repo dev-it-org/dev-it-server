@@ -12,7 +12,7 @@ export class SignUpDto {
   @IsString()
   username: string
 
-  @ApiProperty()
+  @ApiProperty({ default: 'test' })
   @IsString()
   @IsNotEmpty()
   password: string

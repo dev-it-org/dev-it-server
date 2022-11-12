@@ -1,8 +1,10 @@
 import {
   Controller,
   Get,
+  Post,
   HttpCode,
   HttpStatus,
+  Body,
   Req,
   UseGuards,
 } from '@nestjs/common'
@@ -12,6 +14,7 @@ import { Request } from 'express'
 
 import { T_User } from '../users/models'
 
+import { ChangeMyPasswordDto } from './dto'
 import { InfoService } from './info.service'
 
 import { I_GetData } from 'src/models/app.model'
@@ -23,7 +26,7 @@ import { I_GetData } from 'src/models/app.model'
 export class InfoController {
   constructor(private infoService: InfoService) {}
 
-  @Get('/me')
+  @Get('me')
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
@@ -33,8 +36,26 @@ export class InfoController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  getMe(@Req() req: Request): Promise<I_GetData<T_User>> {
+  getMyProfile(@Req() req: Request): Promise<I_GetData<T_User>> {
     const user = req.user
-    return this.infoService.getMeAuthorized(Number(user['sub']))
+    return this.infoService.getMyProfile(Number(user['sub']))
+  }
+
+  @Post('me/change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User password updated',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden',
+  })
+  changeMyPassword(
+    @Req() req: Request,
+    @Body() body: ChangeMyPasswordDto,
+  ): Promise<Omit<I_GetData<unknown>, 'data'>> {
+    const user = req.user
+    return this.infoService.changeMyPassword(Number(user['sub']), body)
   }
 }
