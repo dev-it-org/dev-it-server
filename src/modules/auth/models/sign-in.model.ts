@@ -1,3 +1,10 @@
-import { T_AuthBody } from './auth.model'
+import { Role } from '@prisma/client'
 
-export interface I_SignInResponse extends T_AuthBody {}
+import { T_Tokens } from 'src/models/tokens.model'
+
+export interface I_SignInResponse extends T_Tokens {
+  id: number
+  email: string
+  username: string
+  role: Role
+}

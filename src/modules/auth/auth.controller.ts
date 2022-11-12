@@ -12,7 +12,8 @@ import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Request } from 'express'
 
 import { AuthService } from './auth.service'
-import { SignInDto, SignUpDto } from './dto'
+import { RefreshDto, SignInDto, SignUpDto } from './dto'
+import { I_SignInResponse, I_SignUpResponse } from './models'
 
 import { I_GetData } from 'src/models/app.model'
 import { T_Tokens } from 'src/models/tokens.model'
@@ -32,7 +33,7 @@ export class AuthController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  signUp(@Body() dto: SignUpDto): Promise<I_GetData<T_Tokens>> {
+  signUp(@Body() dto: SignUpDto): Promise<I_GetData<I_SignUpResponse>> {
     return this.authService.signUp(dto)
   }
 
@@ -46,11 +47,11 @@ export class AuthController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  signIn(@Body() dto: SignInDto): Promise<I_GetData<T_Tokens>> {
+  signIn(@Body() dto: SignInDto): Promise<I_GetData<I_SignInResponse>> {
     return this.authService.signIn(dto)
   }
 
-  @UseGuards(AuthGuard('jwt-refresh'))
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -62,8 +63,11 @@ export class AuthController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  refreshTokens(@Req() req: Request): Promise<I_GetData<T_Tokens>> {
+  refreshTokens(
+    @Req() req: Request,
+    @Body() body: RefreshDto,
+  ): Promise<I_GetData<T_Tokens>> {
     const user = req.user
-    return this.authService.refreshTokens(user['email'], user['refreshToken'])
+    return this.authService.refreshTokens(user['email'], body.refreshToken)
   }
 }

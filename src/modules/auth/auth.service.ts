@@ -11,9 +11,11 @@ import { PrismaService } from '../prisma'
 import { UsersService } from '../users'
 
 import { SignInDto, SignUpDto } from './dto'
+import { I_SignInResponse, I_SignUpResponse } from './models'
 
 import { T_Tokens } from 'src/models/tokens.model'
 import { I_GetData } from 'src/models/app.model'
+import { Role } from '@prisma/client'
 
 @Injectable()
 export class AuthService {
@@ -24,55 +26,71 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async signUp(dto: SignUpDto): Promise<I_GetData<T_Tokens>> {
-    const userExists = await this.usersService.findUnique('email', dto.email)
+  async signUp(dto: SignUpDto): Promise<I_GetData<I_SignUpResponse>> {
+    try {
+      const userExists = await this.usersService.findUnique('email', dto.email)
 
-    if (userExists)
-      throw new ForbiddenException(
-        `User with email: ${dto.email} already exists`,
-      )
+      if (userExists)
+        throw new ForbiddenException(
+          `User with email: ${dto.email} already exists`,
+        )
 
-    const hashedPassword = await argon2.hash(dto.password)
+      const hashedPassword = await argon2.hash(dto.password)
 
-    const user = await this.usersService.create({
-      email: dto.email,
-      username: dto.username,
-      hash: hashedPassword,
-    })
+      const user = await this.usersService.create({
+        email: dto.email,
+        username: dto.username,
+        hash: hashedPassword,
+      })
 
-    const tokens = await this.getTokens(user.id, user.email)
-    await this.updateRefreshToken(user.id, tokens.refreshToken)
+      const tokens = await this.getTokens(user.id, user.email, user.role)
+      await this.updateRefreshToken(user.id, tokens.refreshToken)
 
-    return {
-      message: 'Successfully signed up',
-      data: {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      },
-      timestamp: new Date(),
+      return {
+        message: 'Successfully signed up',
+        data: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        },
+        timestamp: new Date(),
+      }
+    } catch (error) {
+      throw new ForbiddenException(error.response)
     }
   }
 
-  async signIn(dto: SignInDto): Promise<I_GetData<T_Tokens>> {
-    const user = await this.usersService.findUniqueDefault('email', dto.email)
+  async signIn(dto: SignInDto): Promise<I_GetData<I_SignInResponse>> {
+    try {
+      const user = await this.usersService.findUniqueDefault('email', dto.email)
 
-    if (!user)
-      throw new ForbiddenException(`User with email ${dto.email} not found`)
+      if (!user)
+        throw new NotFoundException(`User with email ${dto.email} not found`)
 
-    const passwordMatches = await argon2.verify(user.hash, dto.password)
+      const passwordMatches = await argon2.verify(user.hash, dto.password)
 
-    if (!passwordMatches) throw new ForbiddenException('Incorrect password')
+      if (!passwordMatches) throw new ForbiddenException('Incorrect password')
 
-    const tokens = await this.getTokens(user.id, user.email)
-    await this.updateRefreshToken(user.id, tokens.refreshToken)
+      const tokens = await this.getTokens(user.id, user.email, user.role)
+      await this.updateRefreshToken(user.id, tokens.refreshToken)
 
-    return {
-      message: 'Successfully signed in',
-      data: {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      },
-      timestamp: new Date(),
+      return {
+        message: 'Successfully signed in',
+        data: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        },
+        timestamp: new Date(),
+      }
+    } catch (error) {
+      throw new ForbiddenException(error.response)
     }
   }
 
@@ -80,14 +98,14 @@ export class AuthService {
     try {
       const user = await this.usersService.findUniqueDefault('email', email)
 
-      if (!user) throw new ForbiddenException('Incorrect data')
+      if (!user) throw new NotFoundException('Incorrect data')
 
       const refreshTokenMatches = await argon2.verify(user.hashedRt, rt)
 
       if (!refreshTokenMatches)
         throw new ForbiddenException('Incorrect refresh token')
 
-      const tokens = await this.getTokens(user.id, user.email)
+      const tokens = await this.getTokens(user.id, user.email, user.role)
       await this.updateRefreshToken(user.id, tokens.refreshToken)
 
       return {
@@ -98,27 +116,33 @@ export class AuthService {
         },
         timestamp: new Date(),
       }
-    } catch {
-      throw new NotFoundException('Refresh token expired')
+    } catch (error) {
+      throw new ForbiddenException(error.response)
     }
   }
 
-  async getTokens(userId: number, email: string): Promise<T_Tokens> {
+  async getTokens(
+    userId: number,
+    email: string,
+    role: Role,
+  ): Promise<T_Tokens> {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: userId,
           email,
+          role,
         },
         {
           secret: this.configService.get<string>('ACCESS_TOKEN'),
-          expiresIn: 60 * 60 * 24 * 2,
+          expiresIn: 60 * 60 * 24,
         },
       ),
       this.jwtService.signAsync(
         {
           sub: userId,
           email,
+          role,
         },
         {
           secret: this.configService.get<string>('REFRESH_TOKEN'),

@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common'
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { Role, User } from '@prisma/client'
 import * as argon2 from 'argon2'
 
@@ -22,8 +26,6 @@ export class UsersService {
   async getUsersAuthorized(
     email: string,
   ): Promise<I_GetData<{ users: T_User[]; count: number }>> {
-    await this.checkRole('email', email)
-
     const users = await this.findMany()
 
     return {
@@ -40,8 +42,7 @@ export class UsersService {
     email: string,
     userId: number,
   ): Promise<I_GetData<{ user: T_User }>> {
-    await this.checkRole('email', email)
-    await this.checkExists('id', userId)
+    await this.checkNotExists('id', userId)
 
     const user = await this.findUnique('id', Number(userId))
 
@@ -59,8 +60,7 @@ export class UsersService {
     userId: number,
     body: UpdateUserDto,
   ): Promise<I_GetData<{ user: T_User }>> {
-    await this.checkRole('email', email)
-    await this.checkExists('id', userId)
+    await this.checkNotExists('id', userId)
 
     const user = await this.update({
       type: 'email',
@@ -80,8 +80,8 @@ export class UsersService {
   async createUserAuthorized(
     email: string,
     body: CreateUserDto,
-  ): Promise<I_GetData<{ user: T_User }>> {
-    await this.checkRole('email', email)
+  ): Promise<I_GetData<Omit<T_User, 'created_at' | 'updated_at'>>> {
+    await this.checkExists('email', body.email)
 
     const hashedPassword = await argon2.hash(body.password)
 
@@ -94,7 +94,10 @@ export class UsersService {
     return {
       message: 'Successfully created user',
       data: {
-        user,
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
       },
       timestamp: new Date(),
     }
@@ -104,8 +107,7 @@ export class UsersService {
     email: string,
     userId: number,
   ): Promise<Omit<I_GetData<unknown>, 'data'>> {
-    await this.checkRole('email', email)
-    await this.checkExists('id', userId)
+    await this.checkNotExists('id', userId)
     await this.delete({
       type: 'id',
       param: userId,
@@ -201,42 +203,53 @@ export class UsersService {
   }
 
   async delete(data: T_UserDeleteData) {
-    const { type, param, email } = data
+    try {
+      const { type, param, email } = data
 
-    const user = await this.findUnique('email', email)
+      const user = await this.findUnique('email', email)
 
-    if (user.id === param)
-      throw new ForbiddenException('Can not be deleted while authorized')
+      if (user.id === param)
+        throw new ForbiddenException('Can not be deleted while authorized')
 
-    await this.prismaService.user.delete({
-      where: {
-        [type]: param,
-      },
-    })
+      await this.prismaService.user.delete({
+        where: {
+          [type]: param,
+        },
+      })
+    } catch (error) {
+      throw new ForbiddenException(error.response)
+    }
   }
 
-  async checkRole(type: T_UserFindType, param: T_UserFindParam) {
-    const user = await this.prismaService.user.findUnique({
-      where: {
-        [type]: param,
-      },
-    })
+  async checkNotExists(type: T_UserFindType, param: T_UserFindParam) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          [type]: param,
+        },
+      })
 
-    if (user.role === Role.User) throw new ForbiddenException(`Forbidden`)
-
-    return
+      if (!user)
+        throw new NotFoundException(`User with ${type}: ${param} not found`)
+    } catch (error) {
+      throw new ForbiddenException(error.response)
+    }
   }
 
   async checkExists(type: T_UserFindType, param: T_UserFindParam) {
-    const user = await this.prismaService.user.findUnique({
-      where: {
-        [type]: param,
-      },
-    })
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          [type]: param,
+        },
+      })
 
-    if (!user)
-      throw new ForbiddenException(`User with ${type}: ${param} not found`)
-
-    return
+      if (user)
+        throw new ForbiddenException(
+          `User with ${type}: ${param} already exists`,
+        )
+    } catch (error) {
+      throw new ForbiddenException(error.response)
+    }
   }
 }

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
+import { Role } from '@prisma/client'
 import { Request } from 'express'
 
 import { CreateUserDto, UpdateUserDto } from './dto'
@@ -20,9 +21,11 @@ import { UsersService } from './users.service'
 import { T_User } from './models'
 
 import { I_GetData } from 'src/models/app.model'
+import { RolesGuard } from 'src/common'
 
-@ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'), RolesGuard([Role.Admin, Role.Moderator]))
 @Controller('users')
 @ApiTags('Users')
 export class UsersController {
@@ -99,7 +102,7 @@ export class UsersController {
   createUser(
     @Req() req: Request,
     @Body() body: CreateUserDto,
-  ): Promise<I_GetData<{ user: T_User }>> {
+  ): Promise<I_GetData<Omit<T_User, 'created_at' | 'updated_at'>>> {
     const user = req.user
     return this.usersService.createUserAuthorized(user['email'], body)
   }
