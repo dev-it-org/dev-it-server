@@ -8,11 +8,6 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
-    "studio": "yarn prisma studio",
-    "migrate": "yarn prisma migrate dev --create-only",
-    "push": "yarn prisma db push",
-    "pull": "yarn prisma db pull",
-    "generate": "yarn prisma generate",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

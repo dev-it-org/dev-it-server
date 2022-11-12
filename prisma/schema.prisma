@@ -12,10 +12,12 @@ model User {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   email      String   @unique
-  username   String   @unique
+  username   String
   hash       String
   hashedRt   String?
   role       Role     @default(User)
+
+  @@map("users")
 }
 
 model Post {
