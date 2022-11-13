@@ -9,14 +9,15 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
 import { Role } from '@prisma/client'
 
 import { CreatePostDto, UpdatePostDto } from './dto'
 import { PostsService } from './posts.service'
-import { T_Post } from './models'
+import { E_OrderBy, T_Post } from './models'
 
 import { I_GetData } from 'src/models/app.model'
 import { RolesGuard } from 'src/common'
@@ -36,8 +37,37 @@ export class PostsController {
     status: HttpStatus.FORBIDDEN,
     description: 'Forbidden',
   })
-  getPosts(): Promise<I_GetData<{ posts: T_Post[] }>> {
-    return this.postsService.getPosts()
+  @ApiQuery({
+    name: 'title',
+    type: String,
+    description: 'Posts title',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: String,
+    description: 'Posts limit',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'page',
+    type: String,
+    description: 'Posts page',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'sort',
+    enum: E_OrderBy,
+    description: 'Posts sort',
+    required: false,
+  })
+  getPosts(
+    @Query('title') title: string,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+    @Query('sort') sort: E_OrderBy = E_OrderBy.asc,
+  ): Promise<I_GetData<{ posts: T_Post[] }>> {
+    return this.postsService.getPosts(title, Number(limit), Number(page), sort)
   }
 
   @Get(':postId')

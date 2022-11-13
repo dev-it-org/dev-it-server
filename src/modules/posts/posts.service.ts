@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma'
 
 import { CreatePostDto, UpdatePostDto } from './dto'
 import {
+  E_OrderBy,
   I_FetchResponse,
   T_Post,
   T_PostCreateData,
@@ -29,10 +30,8 @@ export class PostsService {
     this.fetchPosts()
   }
 
-  private readonly logger = new Logger('PostServiceLogger')
-
-  @Cron(CronExpression.EVERY_12_HOURS)
-  async fetchPosts(): Promise<void> {
+  @Cron(CronExpression.EVERY_HOUR)
+  async fetchPosts() {
     const { data } = await this.httpService.axiosRef.get(
       'https://www.hltv.org/rss/news',
     )
@@ -62,8 +61,13 @@ export class PostsService {
     }
   }
 
-  async getPosts(): Promise<I_GetData<{ posts: T_Post[]; count: number }>> {
-    const posts = await this.findMany()
+  async getPosts(
+    title: string,
+    limit: number,
+    page: number,
+    sort: E_OrderBy,
+  ): Promise<I_GetData<{ posts: T_Post[]; count: number }>> {
+    const posts = await this.findMany(title, limit, page, sort)
 
     return {
       message: 'Successfully fetched posts',
@@ -129,8 +133,37 @@ export class PostsService {
     }
   }
 
-  async findMany(): Promise<T_Post[]> {
-    return await this.prismaService.post.findMany()
+  async findMany(
+    title: string,
+    limit: number,
+    page: number,
+    sort: E_OrderBy,
+  ): Promise<T_Post[]> {
+    if (isNaN(page)) {
+      const posts = await this.prismaService.post.count()
+
+      return await this.prismaService.post.findMany({
+        take: !limit ? posts : limit,
+        where: {
+          title: {
+            contains: title,
+          },
+        },
+        orderBy: {
+          title: sort,
+        },
+      })
+    } else {
+      return await this.prismaService.post.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        where: {
+          title: {
+            contains: title,
+          },
+        },
+      })
+    }
   }
 
   async findUnique(postId: number): Promise<T_Post> {

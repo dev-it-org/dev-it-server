@@ -1,5 +1,10 @@
 import { Post } from '@prisma/client'
 
+export enum E_OrderBy {
+  asc = 'asc',
+  desc = 'desc',
+}
+
 export type T_Post = Post
 
 export type T_PostUpdateData = {
