@@ -22,7 +22,6 @@
 # Main mode
 $ yarn start:dev
 
+```
 
 # Open Swagger by default: localhost:4000/api-docs
-
-```
