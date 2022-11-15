@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsOptional, IsString } from 'class-validator'
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class UpdatePostDto {
   @ApiProperty({ default: 'New Title' })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   title: string
 
   @ApiProperty({ default: 'New Description' })

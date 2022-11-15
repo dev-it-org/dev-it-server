@@ -66,14 +66,26 @@ export class PostsService {
     limit: number,
     page: number,
     sort: E_OrderBy,
-  ): Promise<I_GetData<{ posts: T_Post[]; count: number }>> {
-    const posts = await this.findMany(title, limit, page, sort)
+  ): Promise<
+    I_GetData<{
+      posts: T_Post[]
+      count: number
+      total: number
+      page: number
+      limit: number
+    }>
+  > {
+    const total = await this.prismaService.post.count()
+    const posts = await this.findMany(title, limit, page, sort, total)
 
     return {
       message: 'Successfully fetched posts',
       data: {
         posts,
         count: posts.length,
+        total,
+        page,
+        limit,
       },
       timestamp: new Date(),
     }
@@ -138,15 +150,15 @@ export class PostsService {
     limit: number,
     page: number,
     sort: E_OrderBy,
+    total: number,
   ): Promise<T_Post[]> {
     if (isNaN(page)) {
-      const posts = await this.prismaService.post.count()
-
       return await this.prismaService.post.findMany({
-        take: !limit ? posts : limit,
+        take: !limit ? total : limit,
         where: {
           title: {
             contains: title,
+            mode: 'insensitive',
           },
         },
         orderBy: {
@@ -160,7 +172,11 @@ export class PostsService {
         where: {
           title: {
             contains: title,
+            mode: 'insensitive',
           },
+        },
+        orderBy: {
+          title: sort,
         },
       })
     }

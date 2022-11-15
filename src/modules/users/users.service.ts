@@ -206,7 +206,7 @@ export class UsersService {
       const { type, param, userId } = data
 
       if (userId === param)
-        throw new ForbiddenException('Can not be deleted while authorized')
+        throw new ForbiddenException('Can not be deleted while use it by yourself')
 
       await this.prismaService.user.delete({
         where: {

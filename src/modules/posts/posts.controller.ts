@@ -66,7 +66,15 @@ export class PostsController {
     @Query('limit') limit: string,
     @Query('page') page: string,
     @Query('sort') sort: E_OrderBy = E_OrderBy.asc,
-  ): Promise<I_GetData<{ posts: T_Post[] }>> {
+  ): Promise<
+    I_GetData<{
+      posts: T_Post[]
+      count: number
+      total: number
+      page: number
+      limit: number
+    }>
+  > {
     return this.postsService.getPosts(title, Number(limit), Number(page), sort)
   }
 
